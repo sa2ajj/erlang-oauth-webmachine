@@ -15,6 +15,7 @@
 -record(state, {
     kind,
     params,
+    consumer,
     user
 }).
 
@@ -64,17 +65,15 @@ is_authorized(ReqData, #state{kind=Kind, params=Params}=State) ->
             false;
 
         _ ->
-            verify(Kind, Params, ReqData)
+            verify(Kind, Params, ReqData, State)
     end,
     case Result of
-        {true, User} ->
-            {true, ReqData, State#state{user=User}};
+        {true, NewState} ->
+            {true, ReqData, NewState};
 
-        true ->
-            {true, ReqData, State};
 
-        _ ->
-            {"OAuth realm=\"" ?REALM "\"", ReqData, State}
+        {_, NewState} ->
+            {"OAuth realm=\"" ?REALM "\"", ReqData, NewState}
     end.
 
 content_types_provided(ReqData, State) ->
@@ -175,45 +174,45 @@ check_required_params(Params, [Key | Rest]) ->
 check_required_params(_, []) ->
     ok.
 
-verify(Kind, Params, ReqData) ->
+verify(Kind, Params, ReqData, State) ->
     {value, {_, Signature}, OtherParams} = lists:keytake("oauth_signature", 1, Params),
     {_, ConsumerKey} = lists:keyfind("oauth_consumer_key", 1, OtherParams),
     URL = string:concat(?REALM, wrq:path(ReqData)),
     io:format("verify: ~p ~s~n", [wrq:method(ReqData), URL]),
     case eow_db:consumer_lookup(ConsumerKey) of
         none ->
-            false;
+            {false, State};
 
         Consumer ->
-            Result = verify(Kind, atom_to_list(wrq:method(ReqData)), URL, Consumer, Signature, OtherParams),
+            Result = verify(Kind, atom_to_list(wrq:method(ReqData)), URL, Signature, OtherParams, State#state{consumer=Consumer}),
             io:format("verify result: ~p~n", [Result]),
             Result
     end.
 
-verify(request_token, Method, URL, Consumer, Signature, Params) ->
+verify(request_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(request_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    oauth:verify(Signature, Method, URL, Params, Consumer, "");
-verify(access_token, Method, URL, Consumer, Signature, Params) ->
+    {oauth:verify(Signature, Method, URL, Params, Consumer, ""), State};
+verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
     case eow_db:request_secret_lookup(oauth:token(Params)) of
         none ->
-            false;
+            {false, State};
 
         Secret ->
-            oauth:verify(Signature, Method, URL, Params, Consumer, Secret)
+            {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State}
     end;
-verify(access, Method, URL, Consumer, Signature, Params) ->
+verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
     case oew_db:access_secret_lookup(oauth:token(Params)) of
         none ->
-            false;
+            {false, State};
 
         {Secret, User} ->
-            {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), User}
+            {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State#state{user=User}}
     end;
-verify(Kind, _, _, _, _, _) ->
+verify(Kind, _, _, _, _, State) ->
     io:format("verify(~p):~n", [Kind]),
-    false.
+    {false, State}.
 
 -ifdef(YES).
 set_resp(ReqData, ContentType, Body) ->
