@@ -203,7 +203,7 @@ verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=S
     end;
 verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case oew_db:access_secret_lookup(oauth:token(Params)) of
+    case eow_db:access_secret_lookup(oauth:token(Params)) of
         none ->
             {false, State};
 
