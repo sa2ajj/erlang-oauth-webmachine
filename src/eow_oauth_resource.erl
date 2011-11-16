@@ -175,7 +175,7 @@ verify(Kind, Params, ReqData) ->
     {_, ConsumerKey} = lists:keyfind("oauth_consumer_key", 1, OtherParams),
     URL = string:concat(?REALM, wrq:path(ReqData)),
     io:format("verify: ~p ~s~n", [wrq:method(ReqData), URL]),
-    case consumer_lookup(ConsumerKey) of
+    case eow_db:consumer_lookup(ConsumerKey) of
         none ->
             false;
 
@@ -190,7 +190,7 @@ verify(request_token, Method, URL, Consumer, Signature, Params) ->
     oauth:verify(Signature, Method, URL, Params, Consumer, "");
 verify(access_token, Method, URL, Consumer, Signature, Params) ->
     io:format("verify(access_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case request_secret_lookup(oauth:token(Params)) of
+    case eow_db:request_secret_lookup(oauth:token(Params)) of
         none ->
             false;
 
@@ -199,7 +199,7 @@ verify(access_token, Method, URL, Consumer, Signature, Params) ->
     end;
 verify(access, Method, URL, Consumer, Signature, Params) ->
     io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case access_secret_lookup(oauth:token(Params)) of
+    case oew_db:access_secret_lookup(oauth:token(Params)) of
         none ->
             false;
 
@@ -214,19 +214,3 @@ verify(Kind, _, _, _, _, _) ->
 set_resp(ReqData, ContentType, Body) ->
     wrq:set_resp_header("content-type", ContentType, wrq:set_resp_body(Body, ReqData)).
 -endif.
-
-% To be done with a database
-consumer_lookup("key") ->
-    {"key", "secret", hmac_sha1};
-consumer_lookup(_) ->
-    none.
-
-request_secret_lookup("requestkey") ->
-    "requestsecret";
-request_secret_lookup(_) ->
-    none.
-
-access_secret_lookup("accesskey") ->
-    {"accesssecret", "joe"};
-access_secret_lookup(_) ->
-    none.
