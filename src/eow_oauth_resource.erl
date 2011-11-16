@@ -84,7 +84,12 @@ content_types_provided(ReqData, State) ->
     {Types, ReqData, State}.
 
 to_text(ReqData, #state{kind=request_token}=State) ->
-    {"oauth_token=requestkey&oauth_token_secret=requestsecret", ReqData, State};
+    {Token, Secret} = eow_db:new_request_token(),
+    Result = oauth:uri_params_encode([
+        {"oauth_token", Token},
+        {"oauth_token_secret", Secret}
+    ]),
+    {Result, ReqData, State};
 to_text(ReqData, #state{kind=access_token}=State) ->
     {"oauth_token=accesskey&oauth_token_secret=accesssecret", ReqData, State};
 to_text(ReqData, #state{kind=authorize}=State) ->
