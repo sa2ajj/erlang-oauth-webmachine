@@ -1,9 +1,11 @@
 ERL ?= erl
 APP := eow
 
-.PHONY: deps
+.PHONY: deps compile xref
 
-all: deps
+all: compile
+
+compile: deps
 	@./rebar compile
 
 deps:
@@ -17,3 +19,6 @@ distclean: clean
 
 docs:
 	@erl -noshell -run edoc_run application '$(APP)' '"."' '[]'
+
+xref: compile
+	@./rebar skip_deps=true xref
