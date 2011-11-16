@@ -4,7 +4,7 @@
     consumer_lookup/1,
     request_secret_lookup/2,
     access_secret_lookup/1,
-    new_request_token/0
+    new_request_token/1
 ]).
 
 consumer_lookup("key") ->
@@ -22,5 +22,7 @@ access_secret_lookup("accesskey") ->
 access_secret_lookup(_) ->
     none.
 
-new_request_token() ->
-    {"requestkey", "requestsecret"}.
+new_request_token({"key", _, _}) ->
+    {"requestkey", "requestsecret"};
+new_request_token(_) ->
+    none.
