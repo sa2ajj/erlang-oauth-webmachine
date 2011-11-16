@@ -26,14 +26,10 @@
 init([Kind]) ->
     {ok, #state{kind=Kind}}.
 
+allowed_methods(ReqData, #state{kind=authorize}=State) ->
+    {['GET', 'POST'], ReqData, State};
 allowed_methods(ReqData, State) ->
-    {if
-        State#state.kind == 'authorize' ->
-            ['GET', 'POST'];
-
-        true ->
-            ['GET']
-    end, ReqData, State}.
+    {['GET'], ReqData, State}.
 
 malformed_request(ReqData, #state{kind=authorize}=State) ->
     {false, ReqData, State};
@@ -155,14 +151,13 @@ check_params(signature, Params) ->
 check_params(done, _) ->
     ok.
 
-required_params() ->
-    [
-        "oauth_consumer_key",
-        "oauth_signature_method",
-        "oauth_signature",
-        "oauth_timestamp",
-        "oauth_nonce"
-    ].
+required_params() -> [
+    "oauth_consumer_key",
+    "oauth_signature_method",
+    "oauth_signature",
+    "oauth_timestamp",
+    "oauth_nonce"
+].
 
 check_required_params(Params) ->
     check_required_params(Params, required_params()).
@@ -184,22 +179,18 @@ verify(Kind, Params, ReqData, State) ->
     {value, {_, Signature}, OtherParams} = lists:keytake("oauth_signature", 1, Params),
     {_, ConsumerKey} = lists:keyfind("oauth_consumer_key", 1, OtherParams),
     URL = string:concat(?REALM, wrq:path(ReqData)),
-    io:format("verify: ~p ~s~n", [wrq:method(ReqData), URL]),
     case eow_db:consumer_lookup(ConsumerKey) of
         none ->
             {false, State};
 
         Consumer ->
-            Result = verify(Kind, atom_to_list(wrq:method(ReqData)), URL, Signature, OtherParams, State#state{consumer=Consumer}),
-            io:format("verify result: ~p~n", [Result]),
-            Result
+            verify(Kind, atom_to_list(wrq:method(ReqData)), URL, Signature,
+                   OtherParams, State#state{consumer=Consumer})
     end.
 
 verify(request_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
-    io:format("verify(request_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
     {oauth:verify(Signature, Method, URL, Params, Consumer, ""), State};
 verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
-    io:format("verify(access_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
     case eow_db:request_token_lookup(Consumer, oauth:token(Params)) of
         none ->
             {false, State};
@@ -213,7 +204,8 @@ verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=S
             {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State#state{user=User}}
     end;
 verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
-    io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
+    % this branch is not used in this module.  it should be used for serving
+    % OAuth protected resources
     case eow_db:access_token_lookup(oauth:token(Params)) of
         none ->
             {false, State};
@@ -221,11 +213,5 @@ verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) 
         {Secret, User} ->
             {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State#state{user=User}}
     end;
-verify(Kind, _, _, _, _, State) ->
-    io:format("verify(~p):~n", [Kind]),
+verify(_Kind, _, _, _, _, State) ->
     {false, State}.
-
--ifdef(YES).
-set_resp(ReqData, ContentType, Body) ->
-    wrq:set_resp_header("content-type", ContentType, wrq:set_resp_body(Body, ReqData)).
--endif.
