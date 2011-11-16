@@ -4,7 +4,8 @@
     consumer_lookup/1,
     request_secret_lookup/2,
     access_secret_lookup/1,
-    new_request_token/1
+    new_request_token/1,
+    new_access_token/1
 ]).
 
 -define(USER, "joe").
@@ -27,4 +28,9 @@ access_secret_lookup(_) ->
 new_request_token({"key", _, _}) ->
     {"requestkey", "requestsecret"};
 new_request_token(_) ->
+    none.
+
+new_access_token(?USER) ->
+    {"accesskey", "accesssecret"};
+new_access_token(_) ->
     none.

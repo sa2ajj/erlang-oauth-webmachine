@@ -89,8 +89,14 @@ to_text(ReqData, #state{kind=request_token, consumer=Consumer}=State) ->
         {"oauth_token_secret", Secret}
     ]),
     {Result, ReqData, State};
-to_text(ReqData, #state{kind=access_token}=State) ->
-    {"oauth_token=accesskey&oauth_token_secret=accesssecret", ReqData, State};
+to_text(ReqData, #state{kind=access_token, user=User}=State) ->
+    % at this point, user != 'undefined' (it's handled in is_authorized function)
+    {Token, Secret} = eow_db:new_access_token(User),
+    Result = oauth:uri_params_encode([
+        {"oauth_token", Token},
+        {"oauth_token_secret", Secret}
+    ]),
+    {Result, ReqData, State};
 to_text(ReqData, #state{kind=authorize}=State) ->
     {"AUTH", ReqData, State}.
 
