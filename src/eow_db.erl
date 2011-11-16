@@ -7,18 +7,20 @@
     new_request_token/1
 ]).
 
+-define(USER, "joe").
+
 consumer_lookup("key") ->
     {"key", "secret", hmac_sha1};
 consumer_lookup(_) ->
     none.
 
 request_secret_lookup({"key", _, _}, "requestkey") ->
-    "requestsecret";
+    {"requestsecret", ?USER};
 request_secret_lookup(_, _) ->
     none.
 
 access_secret_lookup("accesskey") ->
-    {"accesssecret", "joe"};
+    {"accesssecret", ?USER};
 access_secret_lookup(_) ->
     none.
 

@@ -198,8 +198,13 @@ verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=S
         none ->
             {false, State};
 
-        Secret ->
-            {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State}
+        {_, undefined} ->
+            % the user has not authorized the request token yet (indicated by
+            % user value 'undefined')
+            {false, State};
+
+        {Secret, User} ->
+            {oauth:verify(Signature, Method, URL, Params, Consumer, Secret), State#state{user=User}}
     end;
 verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
