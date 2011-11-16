@@ -83,7 +83,7 @@ content_types_provided(ReqData, State) ->
     {Types, ReqData, State}.
 
 to_text(ReqData, #state{kind=request_token, consumer=Consumer}=State) ->
-    {Token, Secret} = eow_db:new_request_token(Consumer),
+    {Token, Secret} = eow_db:request_token_new(Consumer),
     Result = oauth:uri_params_encode([
         {"oauth_token", Token},
         {"oauth_token_secret", Secret}
@@ -91,7 +91,7 @@ to_text(ReqData, #state{kind=request_token, consumer=Consumer}=State) ->
     {Result, ReqData, State};
 to_text(ReqData, #state{kind=access_token, user=User}=State) ->
     % at this point, user != 'undefined' (it's handled in is_authorized function)
-    {Token, Secret} = eow_db:new_access_token(User),
+    {Token, Secret} = eow_db:access_token_new(User),
     Result = oauth:uri_params_encode([
         {"oauth_token", Token},
         {"oauth_token_secret", Secret}
@@ -200,7 +200,7 @@ verify(request_token, Method, URL, Signature, Params, #state{consumer=Consumer}=
     {oauth:verify(Signature, Method, URL, Params, Consumer, ""), State};
 verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case eow_db:request_secret_lookup(Consumer, oauth:token(Params)) of
+    case eow_db:request_token_lookup(Consumer, oauth:token(Params)) of
         none ->
             {false, State};
 
@@ -214,7 +214,7 @@ verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=S
     end;
 verify(access, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case eow_db:access_secret_lookup(oauth:token(Params)) of
+    case eow_db:access_token_lookup(oauth:token(Params)) of
         none ->
             {false, State};
 

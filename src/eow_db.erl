@@ -2,10 +2,10 @@
 
 -export([
     consumer_lookup/1,
-    request_secret_lookup/2,
-    access_secret_lookup/1,
-    new_request_token/1,
-    new_access_token/1
+    request_token_new/1,
+    request_token_lookup/2,
+    access_token_new/1,
+    access_token_lookup/1
 ]).
 
 -define(USER, "joe").
@@ -15,22 +15,22 @@ consumer_lookup("key") ->
 consumer_lookup(_) ->
     none.
 
-request_secret_lookup({"key", _, _}, "requestkey") ->
-    {"requestsecret", ?USER};
-request_secret_lookup(_, _) ->
-    none.
-
-access_secret_lookup("accesskey") ->
-    {"accesssecret", ?USER};
-access_secret_lookup(_) ->
-    none.
-
-new_request_token({"key", _, _}) ->
+request_token_new({"key", _, _}) ->
     {"requestkey", "requestsecret"};
-new_request_token(_) ->
+request_token_new(_) ->
     none.
 
-new_access_token(?USER) ->
+request_token_lookup({"key", _, _}, "requestkey") ->
+    {"requestsecret", ?USER};
+request_token_lookup(_, _) ->
+    none.
+
+access_token_new(?USER) ->
     {"accesskey", "accesssecret"};
-new_access_token(_) ->
+access_token_new(_) ->
+    none.
+
+access_token_lookup("accesskey") ->
+    {"accesssecret", ?USER};
+access_token_lookup(_) ->
     none.
