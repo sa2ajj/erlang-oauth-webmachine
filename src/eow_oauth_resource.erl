@@ -194,7 +194,7 @@ verify(request_token, Method, URL, Signature, Params, #state{consumer=Consumer}=
     {oauth:verify(Signature, Method, URL, Params, Consumer, ""), State};
 verify(access_token, Method, URL, Signature, Params, #state{consumer=Consumer}=State) ->
     io:format("verify(access_token): ~p~n", [[Method, URL, Consumer, Signature, Params]]),
-    case eow_db:request_secret_lookup(oauth:token(Params)) of
+    case eow_db:request_secret_lookup(Consumer, oauth:token(Params)) of
         none ->
             {false, State};
 
