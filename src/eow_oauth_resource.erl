@@ -114,9 +114,24 @@ check_params(Params) ->
 check_params(missing, Params) ->
     case check_required_params(Params) of
         ok ->
-            check_params(signature, Params);
+            check_params(version, Params);
 
         _ ->
+            nok
+    end;
+check_params(version, Params) ->
+    Version = case lists:keyfind("oauth_version", 1, Params) of
+        {_, Value} ->
+            Value;
+
+        _ ->
+            "1.0"
+    end,
+    if
+        Version == "1.0" ->
+            check_params(signature, Params);
+
+        true ->
             nok
     end;
 check_params(signature, Params) ->
