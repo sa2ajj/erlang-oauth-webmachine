@@ -27,7 +27,7 @@ init([Kind]) ->
     {ok, #state{kind=Kind}}.
 
 allowed_methods(ReqData, #state{kind=authorize}=State) ->
-    {['GET', 'POST'], ReqData, State};
+    {['POST'], ReqData, State};
 allowed_methods(ReqData, State) ->
     {['GET'], ReqData, State}.
 
