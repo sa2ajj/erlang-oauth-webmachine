@@ -1,6 +1,7 @@
 -module(eow_db).
 
 -export([
+    check_user/2,
     consumer_lookup/1,
     request_token_new/1,
     request_token_lookup/2,
@@ -9,6 +10,11 @@
 ]).
 
 -define(USER, "joe").
+
+check_user(?USER, "password") ->
+    true;
+check_user(_, _) ->
+    false.
 
 consumer_lookup("key") ->
     {"key", "secret", hmac_sha1};

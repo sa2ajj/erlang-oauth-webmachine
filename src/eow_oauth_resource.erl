@@ -53,8 +53,34 @@ malformed_request(ReqData, State) ->
     end.
 
 is_authorized(ReqData, #state{kind=authorize}=State) ->
-    % put site specific authorization here
-    {true, ReqData, State};
+    % put site specific authorization here, here's an example of how this can
+    % be done
+    User = case wrq:get_req_header("Authorization", ReqData) of
+        "Basic "++Base64 ->
+            case binary:split(base64:mime_decode(Base64), <<":">>) of
+                [Username, Password] ->
+                    case eow_db:check_user(Username, Password) of
+                        true ->
+                            Username;
+
+                        false ->
+                            unknown
+                    end;
+
+                _ ->
+                    unknown
+            end;
+
+        _ ->
+            unknown
+    end,
+    if
+        User =/= unknown ->
+            {true, ReqData, State#state{user=User}};
+
+        true ->
+            {"Basic realm=\"" ?REALM "\"", ReqData, State}
+    end;
 is_authorized(ReqData, #state{kind=Kind, params=Params}=State) ->
     Result = case Params of
         [] ->
